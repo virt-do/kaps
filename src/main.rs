@@ -1,4 +1,13 @@
+use clap::Parser;
 use unshare::Namespace;
+
+#[derive(Parser)]
+#[clap(version = "0.1", author = "Polytech Montpellier - DevOps")]
+struct RuntimeOpts {
+    /// Container bundle
+    #[clap(short, long)]
+    bundle: String,
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -9,7 +18,8 @@ pub enum Error {
     ChildExitError(i32),
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
+    let opts: RuntimeOpts = RuntimeOpts::parse();
     let mut namespaces = Vec::<Namespace>::new();
 
     namespaces.push(Namespace::Pid);

@@ -1,8 +1,6 @@
-use std::process::Command;
-
 #[derive(Debug)]
 pub enum Error {
-    CmdSpawn(std::io::Error),
+    CmdSpawn(unshare::Error),
 
     ChildWait(std::io::Error),
 
@@ -10,7 +8,7 @@ pub enum Error {
 }
 
 fn main() -> Result<(), Error> {
-    let code = Command::new("/bin/sh")
+    let code = unshare::Command::new("/bin/sh")
         .spawn()
         .map_err(Error::CmdSpawn)?
         .wait()

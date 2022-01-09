@@ -1,5 +1,5 @@
 use clap::Parser;
-use oci_spec::runtime::Spec;
+use oci_spec::runtime::{LinuxNamespaceType, Spec};
 use unshare::Namespace;
 
 use std::path::PathBuf;
@@ -24,6 +24,8 @@ pub enum Error {
     ChildExitError(i32),
 
     OciLoad(oci_spec::OciSpecError),
+
+    OciSpecNsType(LinuxNamespaceType),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -43,15 +45,43 @@ impl Runtime {
             spec,
         })
     }
+
+    #[allow(unreachable_patterns)]
+    fn from_oci_namespace(ns_type: LinuxNamespaceType) -> Result<Namespace> {
+        match ns_type {
+            LinuxNamespaceType::Cgroup => Ok(Namespace::Cgroup),
+            LinuxNamespaceType::Ipc => Ok(Namespace::Ipc),
+            LinuxNamespaceType::Mount => Ok(Namespace::Mount),
+            LinuxNamespaceType::Network => Ok(Namespace::Net),
+            LinuxNamespaceType::Pid => Ok(Namespace::Pid),
+            LinuxNamespaceType::Uts => Ok(Namespace::Uts),
+            LinuxNamespaceType::User => Ok(Namespace::User),
+            _ => Err(Error::OciSpecNsType(ns_type)),
+        }
+    }
+
+    pub fn namespaces(&self) -> Result<Vec<Namespace>> {
+        let mut namespaces = Vec::<Namespace>::new();
+
+        if let Some(linux) = self.spec.linux() {
+            if let Some(ns) = linux.namespaces() {
+                for namespace in ns {
+                    let ns_type = Self::from_oci_namespace(namespace.typ())?;
+                    if ns_type != Namespace::User {
+                        namespaces.push(ns_type);
+                    }
+                }
+            }
+        }
+
+        Ok(namespaces)
+    }
 }
 
 fn main() -> Result<()> {
     let opts: RuntimeOpts = RuntimeOpts::parse();
-    let mut namespaces = Vec::<Namespace>::new();
-
-    namespaces.push(Namespace::Pid);
-
     let runtime = Runtime::new(&opts.bundle)?;
+    let namespaces = runtime.namespaces()?;
 
     let code = unshare::Command::new("/bin/sh")
         .chroot_dir(&runtime.rootfs)

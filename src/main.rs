@@ -1,8 +1,12 @@
+#[macro_use]
+extern crate lazy_static;
+
 use clap::Parser;
 use oci_spec::runtime::{LinuxNamespaceType, Spec};
 use unshare::Namespace;
 
 use std::path::PathBuf;
+use std::process::Command;
 
 const OCI_RUNTIME_SPEC_FILE: &str = "config.json";
 const OCI_RUNTIME_SPEC_ROOTFS: &str = "rootfs";
@@ -26,9 +30,37 @@ pub enum Error {
     OciLoad(oci_spec::OciSpecError),
 
     OciSpecNsType(LinuxNamespaceType),
+
+    RootfsCleanup(std::io::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+struct Mount {
+    typ: String,
+    source: String,
+    destination: String,
+}
+
+lazy_static! {
+    static ref DEFAULT_MOUNTS: Vec<Mount> = vec![
+        Mount {
+            typ: String::from("devtmpfs"),
+            source: String::from("dev"),
+            destination: String::from("/dev"),
+        },
+        Mount {
+            typ: String::from("proc"),
+            source: String::from("proc"),
+            destination: String::from("/proc"),
+        },
+        Mount {
+            typ: String::from("sysfs"),
+            source: String::from("sys"),
+            destination: String::from("/sys"),
+        },
+    ];
+}
 
 struct Runtime {
     rootfs: PathBuf,
@@ -78,6 +110,44 @@ impl Runtime {
         }
 
         Ok(namespaces)
+    }
+
+    fn prepare_rootfs() -> std::result::Result<(), std::io::Error> {
+        for mount in &*DEFAULT_MOUNTS {
+            if let Some(code) = Command::new("mount")
+                .args(["-t", &mount.typ, &mount.source, &mount.destination])
+                .status()?
+                .code()
+            {
+                if code != 0 {
+                    return Err(std::io::Error::from_raw_os_error(code));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn cleanup_rootfs(&self) -> Result<()> {
+        for mount in &*DEFAULT_MOUNTS {
+            let mut path = self.rootfs.clone();
+            path.push(&mount.source);
+
+            if let Some(code) = Command::new("umount")
+                .args([path])
+                .status()
+                .map_err(Error::RootfsCleanup)?
+                .code()
+            {
+                if code != 0 {
+                    return Err(Error::RootfsCleanup(std::io::Error::from_raw_os_error(
+                        code,
+                    )));
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 

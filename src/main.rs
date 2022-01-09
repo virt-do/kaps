@@ -156,14 +156,19 @@ fn main() -> Result<()> {
     let runtime = Runtime::new(&opts.bundle)?;
     let namespaces = runtime.namespaces()?;
 
-    let code = unshare::Command::new("/bin/sh")
-        .chroot_dir(&runtime.rootfs)
-        .unshare(&namespaces)
-        .spawn()
-        .map_err(Error::CmdSpawn)?
-        .wait()
-        .map_err(Error::ChildWait)?
-        .code();
+    let code = unsafe {
+        unshare::Command::new("/bin/sh")
+            .chroot_dir(&runtime.rootfs)
+            .unshare(&namespaces)
+            .pre_exec(Runtime::prepare_rootfs)
+            .spawn()
+            .map_err(Error::CmdSpawn)?
+            .wait()
+            .map_err(Error::ChildWait)?
+            .code()
+    };
+
+    runtime.cleanup_rootfs()?;
 
     if let Some(code) = code {
         if code != 0 {

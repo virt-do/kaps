@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.0.5", features = ["derive"] }
+oci-spec = "0.5.3"
 unshare = "0.7.0"

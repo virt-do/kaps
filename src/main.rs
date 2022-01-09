@@ -1,4 +1,5 @@
 use clap::Parser;
+use oci_spec::runtime::Spec;
 use unshare::Namespace;
 
 use std::path::PathBuf;
@@ -21,20 +22,25 @@ pub enum Error {
     ChildWait(std::io::Error),
 
     ChildExitError(i32),
+
+    OciLoad(oci_spec::OciSpecError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 struct Runtime {
     rootfs: PathBuf,
-    spec_file: PathBuf,
+    spec: Spec,
 }
 
 impl Runtime {
     pub fn new(bundle: &str) -> Result<Self> {
+        let spec_file: PathBuf = [bundle, OCI_RUNTIME_SPEC_FILE].iter().collect();
+        let spec = Spec::load(&spec_file).map_err(Error::OciLoad)?;
+
         Ok(Runtime {
             rootfs: [bundle, OCI_RUNTIME_SPEC_ROOTFS].iter().collect(),
-            spec_file: [bundle, OCI_RUNTIME_SPEC_FILE].iter().collect(),
+            spec,
         })
     }
 }

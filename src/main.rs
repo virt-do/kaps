@@ -1,3 +1,5 @@
+use unshare::Namespace;
+
 #[derive(Debug)]
 pub enum Error {
     CmdSpawn(unshare::Error),
@@ -8,7 +10,12 @@ pub enum Error {
 }
 
 fn main() -> Result<(), Error> {
+    let mut namespaces = Vec::<Namespace>::new();
+
+    namespaces.push(Namespace::Pid);
+
     let code = unshare::Command::new("/bin/sh")
+        .unshare(&namespaces)
         .spawn()
         .map_err(Error::CmdSpawn)?
         .wait()

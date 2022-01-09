@@ -39,11 +39,14 @@ impl Runtime {
     pub fn new(bundle: &str) -> Result<Self> {
         let spec_file: PathBuf = [bundle, OCI_RUNTIME_SPEC_FILE].iter().collect();
         let spec = Spec::load(&spec_file).map_err(Error::OciLoad)?;
+        let rootfs: PathBuf = spec
+            .root()
+            .as_ref()
+            .map_or([bundle, OCI_RUNTIME_SPEC_ROOTFS].iter().collect(), |r| {
+                [bundle, &r.path().to_string_lossy()].iter().collect()
+            });
 
-        Ok(Runtime {
-            rootfs: [bundle, OCI_RUNTIME_SPEC_ROOTFS].iter().collect(),
-            spec,
-        })
+        Ok(Runtime { rootfs, spec })
     }
 
     #[allow(unreachable_patterns)]

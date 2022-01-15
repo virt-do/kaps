@@ -150,7 +150,7 @@ impl Runtime {
         Ok(())
     }
 
-    fn get_env_variables(&self) -> Result<Vec<(&str, &str)>> {
+    fn env_variables(&self) -> Vec<(&str, &str)> {
         let mut env_variables = Vec::<(&str, &str)>::new();
 
         if let Some(process) = self.spec.process() {
@@ -161,7 +161,7 @@ impl Runtime {
                 }
             }
         }
-        Ok(env_variables)
+        env_variables
     }
 }
 
@@ -173,7 +173,7 @@ fn main() -> Result<()> {
     let code = unsafe {
         unshare::Command::new("/bin/sh")
             .chroot_dir(&runtime.rootfs)
-            .envs(runtime.get_env_variables()?)
+            .envs(runtime.env_variables())
             .unshare(&namespaces)
             .pre_exec(Runtime::prepare_rootfs)
             .spawn()

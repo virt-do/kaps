@@ -156,7 +156,7 @@ impl Runtime {
         if let Some(process) = self.spec.process() {
             if let Some(env) = process.env() {
                 for var in env {
-                    let key_value = var.split("=").collect::<Vec<&str>>();
+                    let key_value = var.split('=').collect::<Vec<&str>>();
                     env_variables.push((key_value[0], key_value[1]));
                 }
             }

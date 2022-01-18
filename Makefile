@@ -20,4 +20,4 @@ build:
 # Helper to run run0.
 # Requires that `make bundle` was executed before.
 run: run0
-	sudo ./target/debug/$(shell cat Cargo.toml | grep "name = " | sed 's/name = //g' | cut -d '"' -f2) -b $(TMP_BUNDLE)
+	sudo ./target/debug/$(shell cat Cargo.toml | grep "name = " | sed 's/name = //g' | cut -d '"' -f2) run -b $(TMP_BUNDLE)

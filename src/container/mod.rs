@@ -10,10 +10,6 @@ mod environment;
 mod mounts;
 mod namespaces;
 
-/// Some OCI constants useful for our container implementation.
-const OCI_RUNTIME_SPEC_FILE: &str = "config.json";
-const OCI_RUNTIME_SPEC_ROOTFS: &str = "rootfs";
-
 /// Containers related errors
 #[derive(Debug)]
 pub enum Error {
@@ -25,7 +21,12 @@ pub enum Error {
     Unmount(std::io::Error),
 }
 
+/// A common result type for our container module.
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// Some OCI constants useful for our container implementation.
+const OCI_RUNTIME_SPEC_FILE: &str = "config.json";
+const OCI_RUNTIME_SPEC_ROOTFS: &str = "rootfs";
 
 /// The `Container` struct provides a simple way to
 /// create and run a container on the host.

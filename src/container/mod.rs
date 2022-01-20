@@ -3,9 +3,11 @@ use std::path::PathBuf;
 use oci_spec::runtime::Spec;
 
 use crate::container::environment::Environment;
+use command::Command;
 use mounts::Mounts;
 use namespaces::Namespaces;
 
+mod command;
 mod environment;
 mod mounts;
 mod namespaces;
@@ -40,6 +42,8 @@ pub struct Container {
     mounts: Mounts,
     /// The container environment
     environment: Environment,
+    /// The command entrypoint
+    command: Command,
 }
 
 impl Container {
@@ -70,6 +74,7 @@ impl Container {
 
         Ok(Container {
             environment: Environment::from(spec.process()),
+            command: Command::from(spec.process()),
             namespaces,
             rootfs,
             ..Default::default()
@@ -80,7 +85,7 @@ impl Container {
     pub fn run(&self) -> Result<()> {
         let mounts = self.mounts.clone();
         let code = unsafe {
-            unshare::Command::new("/bin/sh")
+            unshare::Command::from(&self.command)
                 .chroot_dir(&self.rootfs)
                 .unshare(&*self.namespaces.get())
                 .pre_exec(move || Mounts::apply(&mounts))

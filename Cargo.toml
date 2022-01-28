@@ -8,4 +8,4 @@ authors = ["Polytech Montpellier - DevOps"]
 clap = { version = "3.0.5", features = ["derive"] }
 lazy_static = "1.4.0"
 oci-spec = "0.5.3"
-unshare = "0.7.0"
+unshare = { git = "https://github.com/virt-do/unshare", branch = "main" }

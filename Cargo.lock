@@ -406,8 +406,7 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 [[package]]
 name = "unshare"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ceda295552a1eda89f8a748237654ad76b9c87e383fc07af5c4e423eb8e7b9b"
+source = "git+https://github.com/virt-do/unshare?branch=main#7b0a2e8d906bcdb2efa62d3ce9580dc359b731fd"
 dependencies = [
  "libc",
  "nix",

@@ -1,20 +1,30 @@
+mod pull;
 mod run;
 mod spec;
 
+use crate::cli::pull::PullCommand;
 use crate::cli::run::RunCommand;
 use crate::cli::spec::SpecCommand;
+use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 
 /// CLI related errors
 #[derive(Debug)]
 pub enum Error {
-    Run(container::Error),
     Spec(oci_spec::OciSpecError),
+    Runtime(container::Error),
+    Image(oci_image::Error),
 }
 
 impl From<container::Error> for Error {
     fn from(error: container::Error) -> Self {
-        Self::Run(error)
+        Self::Runtime(error)
+    }
+}
+
+impl From<oci_image::Error> for Error {
+    fn from(error: oci_image::Error) -> Self {
+        Self::Image(error)
     }
 }
 
@@ -24,18 +34,18 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// `Handler` is a trait that should be implemented for each of our commands.
 ///
 /// It defines the contract & the input / output of a command execution.
+#[async_trait]
 pub trait Handler {
     /// Executes the command handler.
     ///
     /// Every command should take no argument, has it is built at runtime with these arguments.
     /// Also, a command must always return a `Result<()>`.
-    fn handler(&self) -> crate::Result<()>;
+    async fn handler(&self) -> crate::Result<()>;
 }
 
 #[derive(Parser, Debug)]
 #[clap(version, author)]
 pub struct Cli {
-    /// Container bundle
     #[clap(subcommand)]
     pub(crate) command: Command,
 }
@@ -50,6 +60,7 @@ impl Cli {
         match self.command {
             Command::Run(cmd) => Box::new(cmd),
             Command::Spec(cmd) => Box::new(cmd),
+            Command::Pull(cmd) => Box::new(cmd),
         }
     }
 }
@@ -68,7 +79,8 @@ impl Cli {
 pub enum Command {
     /// Run a container
     Run(RunCommand),
-
     /// Generate container spec
     Spec(SpecCommand),
+    // Pull a container image
+    Pull(PullCommand),
 }

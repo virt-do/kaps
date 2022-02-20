@@ -5,10 +5,13 @@ use crate::cli::{Cli, Handler, Result};
 mod cli;
 mod helper;
 
-fn main() -> Result<()> {
+pub const KAPS_DATA_DIR: &str = "/tmp/kaps";
+
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli: Cli = Cli::parse();
 
-    cli.command().handler()?;
+    cli.command().handler().await?;
 
     Ok(())
 }

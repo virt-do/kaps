@@ -8,7 +8,11 @@ authors = ["Polytech Montpellier - DevOps"]
 oci-image = { path = "oci-image" }
 clap = { version = "3.0.5", features = ["derive"] }
 container = { path = "container" }
+lazy_static = "1.4.0"
 oci-spec = "0.5.3"
+unshare = { git = "https://github.com/virt-do/unshare", branch = "main" }
+tokio = {version = "1.0", features = ["full"]}
+async-trait = "0.1.52"
 
 [workspace]
 members = [

@@ -1,4 +1,5 @@
 use crate::{Handler, Result};
+use async_trait::async_trait;
 use clap::Args;
 use container::Container;
 
@@ -19,8 +20,9 @@ pub struct RunCommand {
     bundle: String,
 }
 
+#[async_trait]
 impl Handler for RunCommand {
-    fn handler(&self) -> Result<()> {
+    async fn handler(&self) -> Result<()> {
         // Create a container by passing the bundle provided in arguments to it's constructor.
         let container = Container::new(&self.bundle)?;
 

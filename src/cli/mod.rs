@@ -40,12 +40,17 @@ pub trait Handler {
     ///
     /// Every command should take no argument, has it is built at runtime with these arguments.
     /// Also, a command must always return a `Result<()>`.
-    async fn handler(&self) -> crate::Result<()>;
+    async fn handler(&self, logger: &mut env_logger::Builder) -> crate::Result<()>;
 }
 
 #[derive(Parser, Debug)]
 #[clap(version, author)]
 pub struct Cli {
+    /// The level of verbosity.
+    #[clap(short, long, parse(from_occurrences))]
+    pub(crate) verbose: usize,
+
+    /// The subcommand to apply
     #[clap(subcommand)]
     pub(crate) command: Command,
 }

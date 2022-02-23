@@ -22,7 +22,7 @@ pub struct RunCommand {
 
 #[async_trait]
 impl Handler for RunCommand {
-    async fn handler(&self) -> Result<()> {
+    async fn handler(&self, _: &mut env_logger::Builder) -> Result<()> {
         // Create a container by passing the bundle provided in arguments to it's constructor.
         let container = Container::new(&self.bundle)?;
 

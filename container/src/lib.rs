@@ -86,16 +86,19 @@ impl Container {
     pub fn run(&self) -> Result<()> {
         let mounts = self.mounts.clone();
         let code = unsafe {
-            unshare::Command::from(&self.command)
+            let mut child = match unshare::Command::from(&self.command)
                 .chroot_dir(&self.rootfs)
                 .unshare(&*self.namespaces.get())
                 .pre_exec(move || Mounts::apply(&mounts))
                 .envs(self.environment.get())
                 .spawn()
-                .map_err(Error::ContainerSpawnCommand)?
-                .wait()
-                .map_err(Error::ContainerWaitCommand)?
-                .code()
+            {
+                Ok(child) => child,
+                Err(_) => {
+                    return self.mounts.cleanup(self.rootfs.clone());
+                }
+            };
+            child.wait().map_err(Error::ContainerWaitCommand)?.code()
         };
 
         self.mounts.cleanup(self.rootfs.clone())?;

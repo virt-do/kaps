@@ -11,6 +11,7 @@ mod command;
 mod environment;
 mod mounts;
 mod namespaces;
+pub mod spec;
 
 /// Containers related errors
 #[derive(Debug)]

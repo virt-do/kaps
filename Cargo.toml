@@ -11,5 +11,5 @@ oci-spec = "0.5.3"
 
 [workspace]
 members = [
-        "container"
+ "container"
 ]

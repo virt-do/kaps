@@ -1,12 +1,15 @@
 mod run;
+mod spec;
 
 use crate::cli::run::RunCommand;
+use crate::cli::spec::SpecCommand;
 use clap::{Parser, Subcommand};
 
 /// CLI related errors
 #[derive(Debug)]
 pub enum Error {
     Run(container::Error),
+    Spec(oci_spec::OciSpecError),
 }
 
 impl From<container::Error> for Error {
@@ -46,6 +49,7 @@ impl Cli {
     pub fn command(self) -> Box<dyn Handler> {
         match self.command {
             Command::Run(cmd) => Box::new(cmd),
+            Command::Spec(cmd) => Box::new(cmd),
         }
     }
 }
@@ -64,4 +68,7 @@ impl Cli {
 pub enum Command {
     /// Run a container
     Run(RunCommand),
+
+    /// Generate container spec
+    Spec(SpecCommand),
 }

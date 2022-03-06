@@ -1,5 +1,5 @@
 [package]
-name = "run0"
+name = "kaps"
 version = "0.1.0"
 edition = "2021"
 authors = ["Polytech Montpellier - DevOps"]

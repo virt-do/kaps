@@ -1,4 +1,4 @@
-use crate::container::Error;
+use crate::Error;
 use oci_spec::runtime::{LinuxNamespace, LinuxNamespaceType};
 use unshare::Namespace;
 
@@ -16,7 +16,7 @@ impl Namespaces {
     /// Convert an `oci_spec::runtime::LinuxNamespaceType` to an `unshare::Namespace`
     /// It returns an error if the namespace is invalid, or if it does not match any pattern.
     #[allow(unreachable_patterns)]
-    fn from_oci_namespace(namespace: LinuxNamespaceType) -> crate::container::Result<Namespace> {
+    fn from_oci_namespace(namespace: LinuxNamespaceType) -> crate::Result<Namespace> {
         match namespace {
             LinuxNamespaceType::Cgroup => Ok(Namespace::Cgroup),
             LinuxNamespaceType::Ipc => Ok(Namespace::Ipc),

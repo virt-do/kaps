@@ -68,6 +68,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "container"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "oci-spec",
+ "unshare",
+]
+
+[[package]]
 name = "darling"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -303,9 +312,7 @@ name = "run0"
 version = "0.1.0"
 dependencies = [
  "clap",
- "lazy_static",
- "oci-spec",
- "unshare",
+ "container",
 ]
 
 [[package]]

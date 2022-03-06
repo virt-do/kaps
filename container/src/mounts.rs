@@ -1,4 +1,4 @@
-use crate::container::Error;
+use crate::Error;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -36,7 +36,7 @@ impl Mounts {
 
     /// Cleanup the mounts of a rootfs.
     /// This method should be called when a container has ended, to clean up the FS.
-    pub fn cleanup(&self, rootfs: PathBuf) -> Result<(), crate::container::Error> {
+    pub fn cleanup(&self, rootfs: PathBuf) -> Result<(), crate::Error> {
         for mount in &self.vec {
             let mut path = rootfs.clone();
             path.push(&mount.source);
@@ -48,9 +48,9 @@ impl Mounts {
                 .code()
             {
                 if code != 0 {
-                    return Err(crate::container::Error::Unmount(
-                        std::io::Error::from_raw_os_error(code),
-                    ));
+                    return Err(crate::Error::Unmount(std::io::Error::from_raw_os_error(
+                        code,
+                    )));
                 }
             }
         }

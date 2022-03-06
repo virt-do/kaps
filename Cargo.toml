@@ -6,6 +6,9 @@ authors = ["Polytech Montpellier - DevOps"]
 
 [dependencies]
 clap = { version = "3.0.5", features = ["derive"] }
-lazy_static = "1.4.0"
-oci-spec = "0.5.3"
-unshare = { git = "https://github.com/virt-do/unshare", branch = "main" }
+container = { path = "container" }
+
+[workspace]
+members = [
+        "container"
+]

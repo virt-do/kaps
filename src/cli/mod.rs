@@ -6,11 +6,11 @@ use clap::{Parser, Subcommand};
 /// CLI related errors
 #[derive(Debug)]
 pub enum Error {
-    Run(crate::container::Error),
+    Run(container::Error),
 }
 
-impl From<crate::container::Error> for Error {
-    fn from(error: crate::container::Error) -> Self {
+impl From<container::Error> for Error {
+    fn from(error: container::Error) -> Self {
         Self::Run(error)
     }
 }

@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use oci_spec::runtime::Spec;
 
-use crate::container::environment::Environment;
 use command::Command;
+use environment::Environment;
 use mounts::Mounts;
 use namespaces::Namespaces;
 

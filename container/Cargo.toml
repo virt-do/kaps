@@ -1,0 +1,10 @@
+[package]
+name = "container"
+version = "0.1.0"
+edition = "2021"
+authors = ["Polytech Montpellier - DevOps"]
+
+[dependencies]
+lazy_static = "1.4.0"
+oci-spec = "0.5.3"
+unshare = { git = "https://github.com/virt-do/unshare", branch = "main" }

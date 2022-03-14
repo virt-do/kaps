@@ -1,7 +1,9 @@
+mod mount;
 mod pull;
 mod run;
 mod spec;
 
+use crate::cli::mount::MountCommand;
 use crate::cli::pull::PullCommand;
 use crate::cli::run::RunCommand;
 use crate::cli::spec::SpecCommand;
@@ -66,6 +68,7 @@ impl Cli {
             Command::Run(cmd) => Box::new(cmd),
             Command::Spec(cmd) => Box::new(cmd),
             Command::Pull(cmd) => Box::new(cmd),
+            Command::Mount(cmd) => Box::new(cmd),
         }
     }
 }
@@ -88,4 +91,6 @@ pub enum Command {
     Spec(SpecCommand),
     // Pull a container image
     Pull(PullCommand),
+    /// Mount an image into a rootfs to be used by a container
+    Mount(MountCommand),
 }

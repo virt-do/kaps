@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use oci_spec::runtime::Spec;
+use unshare::{UidMap, GidMap};
 
 use crate::container::environment::Environment;
 use command::Command;
@@ -29,6 +30,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Some OCI constants useful for our container implementation.
 const OCI_RUNTIME_SPEC_FILE: &str = "config.json";
 const OCI_RUNTIME_SPEC_ROOTFS: &str = "rootfs";
+const OCI_RUNTIME_SPEC_USER_UID: u32 = 0;
+const OCI_RUNTIME_SPEC_USER_GID: u32 = 0;
 
 /// The `Container` struct provides a simple way to
 /// create and run a container on the host.
@@ -44,6 +47,10 @@ pub struct Container {
     environment: Environment,
     /// The command entrypoint
     command: Command,
+    /// User uid, default: 0 (root)
+    uid: u32,
+    /// User gid, default: 0 (root)
+    gid: u32,
 }
 
 impl Container {
@@ -72,11 +79,24 @@ impl Container {
                 Namespaces::from(linux.namespaces())
             });
 
+        let uid: u32 = spec
+            .process()
+            .as_ref()
+            .map_or(OCI_RUNTIME_SPEC_USER_UID, |process| process.user().uid());
+
+        let gid: u32 = spec
+            .process()
+            .as_ref()
+            .map_or(OCI_RUNTIME_SPEC_USER_GID, |process| process.user().gid());
+
+
         Ok(Container {
             environment: Environment::from(spec.process()),
             command: Command::from(spec.process()),
             namespaces,
             rootfs,
+            uid,
+            gid,
             ..Default::default()
         })
     }
@@ -87,6 +107,18 @@ impl Container {
         let code = unsafe {
             unshare::Command::from(&self.command)
                 .chroot_dir(&self.rootfs)
+                .set_id_maps(
+                    vec![UidMap {
+                        count: 1,
+                        inside_uid: 0,
+                        outside_uid: 0,
+                    }],
+                    vec![GidMap {
+                        count: 1,
+                        inside_gid: 0,
+                        outside_gid: 0,
+                    }],
+                )
                 .unshare(&*self.namespaces.get())
                 .pre_exec(move || Mounts::apply(&mounts))
                 .envs(self.environment.get())

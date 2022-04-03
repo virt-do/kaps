@@ -98,7 +98,7 @@ impl Container {
                 .code()
         };
 
-        let _ = &self.mounts.cleanup(self.rootfs.clone())?;
+        self.mounts.cleanup(self.rootfs.clone())?;
 
         if let Some(code) = code {
             if code != 0 {

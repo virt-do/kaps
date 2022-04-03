@@ -32,3 +32,33 @@ impl From<&Option<Process>> for Environment {
         Environment { vars }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{Environment, Error};
+    use oci_spec::runtime::Process;
+
+    #[test]
+    fn test_environment_from_process() -> Result<(), Error> {
+        let mut test_process = Process::default();
+        test_process.set_env(Some(vec![
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".to_string(),
+            "TERM=xterm".to_string(),
+        ]));
+        let test_environment = Environment::from(&Some(test_process));
+
+        assert_eq!(
+            test_environment.vars[0],
+            (
+                "PATH".to_string(),
+                "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".to_string()
+            )
+        );
+        assert_eq!(
+            test_environment.vars[1],
+            (("TERM".to_string(), "xterm".to_string()))
+        );
+
+        Ok(())
+    }
+}

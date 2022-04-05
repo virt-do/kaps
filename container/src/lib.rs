@@ -112,3 +112,31 @@ impl Container {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Container;
+    use proc_mounts::MountList;
+    use tempdir::TempDir;
+
+    #[test]
+    fn test_mount_on_empty_rootfs_should_fail_and_cleanup() -> Result<(), std::io::Error> {
+        //use an empty rootfs for this test
+        let dir = TempDir::new_in("../hack/fixtures", "test")?;
+        let test_folder_path = dir.path().to_str().unwrap();
+        std::fs::create_dir(format!("{}/rootfs", &test_folder_path))?;
+        std::fs::copy(
+            "../hack/fixtures/config.json",
+            format!("{}/config.json", &test_folder_path),
+        )?;
+
+        let host_mounts_before_run_fail = MountList::new().unwrap();
+        let container = Container::new(test_folder_path).unwrap();
+        assert!(container.run().is_err());
+
+        let host_mounts_after_run_fail = MountList::new().unwrap();
+        assert_eq!(host_mounts_before_run_fail, host_mounts_after_run_fail);
+
+        Ok(())
+    }
+}

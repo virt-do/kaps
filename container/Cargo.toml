@@ -13,3 +13,4 @@ serde_json = "1.0"
 
 [dev-dependencies]
 proc-mounts = "0.3.0"
+tempdir = "0.3.7"

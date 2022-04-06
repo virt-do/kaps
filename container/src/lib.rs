@@ -115,7 +115,7 @@ impl Container {
 
 #[cfg(test)]
 mod tests {
-    use crate::Container;
+    use crate::{Container, Error};
     use proc_mounts::MountList;
     use tempdir::TempDir;
 
@@ -137,6 +137,12 @@ mod tests {
         let host_mounts_after_run_fail = MountList::new().unwrap();
         assert_eq!(host_mounts_before_run_fail, host_mounts_after_run_fail);
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_create_container_with_invalid_oci_runtime_spec_file() -> Result<(), Error> {
+        assert!(Container::new("invalid_spec_file").is_err());
         Ok(())
     }
 }

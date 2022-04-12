@@ -19,8 +19,8 @@ impl Mounts {
     /// Apply some mounts.
     /// This method should be called before the container process execution in order to prepare
     /// & mount every mounts defined for it.
-    pub fn apply(mounts: &Mounts) -> Result<(), std::io::Error> {
-        for mount in &mounts.vec {
+    pub fn apply(&self) -> Result<(), std::io::Error> {
+        for mount in &self.vec {
             if let Some(code) = Command::new("mount")
                 .args(["-t", &mount.typ, &mount.source, &mount.destination])
                 .status()?

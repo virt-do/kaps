@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::path::PathBuf;
 
 use oci_spec::runtime::Spec;
@@ -6,12 +8,14 @@ use command::Command;
 use environment::Environment;
 use mounts::Mounts;
 use namespaces::Namespaces;
+use state::{ContainerState, Status};
 
 mod command;
 mod environment;
 mod mounts;
 mod namespaces;
 pub mod spec;
+mod state;
 
 /// Containers related errors
 #[derive(Debug)]
@@ -21,7 +25,23 @@ pub enum Error {
     ContainerSpawnCommand(unshare::Error),
     ContainerWaitCommand(std::io::Error),
     ContainerExit(i32),
+    /// Fail to create container due to existing container with the same id.
+    ContainerExists(String),
     Unmount(std::io::Error),
+    /// Fail to read container state file.
+    WriteStateFile(serde_json::error::Error),
+    /// Fail to save container state file.
+    ReadStateFile(std::io::Error),
+    /// Fail to serialize/deserialize file.
+    SerializeError(serde_json::error::Error),
+    /// Fail to open container state file.
+    OpenStateFile(std::io::Error),
+    /// Fail to create container state file.
+    CreateStateFile(std::io::Error),
+    /// Fail to remove container state file.
+    RemoveStateFile(std::io::Error),
+    /// Fail to acquire lock for the container status
+    StatusLockPoisoned(String),
 }
 
 /// A common result type for our container module.
@@ -45,11 +65,13 @@ pub struct Container {
     environment: Environment,
     /// The command entrypoint
     command: Command,
+    /// The container state
+    state: ContainerState,
 }
 
 impl Container {
     /// Build a new container with the bundle provided in parameters.
-    pub fn new(bundle_path: &str) -> Result<Self> {
+    pub fn new(bundle_path: &str, id: &str) -> Result<Self> {
         let bundle = PathBuf::from(bundle_path);
 
         // Load the specification from the file
@@ -73,17 +95,21 @@ impl Container {
                 Namespaces::from(linux.namespaces())
             });
 
+        // Set the state of the container
+        let state = ContainerState::new(id, bundle_path)?;
+
         Ok(Container {
             environment: Environment::from(spec.process()),
             command: Command::from(spec.process()),
             namespaces,
             rootfs,
+            state,
             ..Default::default()
         })
     }
 
     /// Run the container.
-    pub fn run(&self) -> Result<()> {
+    pub fn run(&mut self) -> Result<()> {
         let mounts = self.mounts.clone();
         let code = unsafe {
             let mut child = match unshare::Command::from(&self.command)
@@ -98,10 +124,15 @@ impl Container {
                     return self.mounts.cleanup(self.rootfs.clone());
                 }
             };
+
+            self.state.pid = child.pid();
+            self.state.set_status(Status::Running)?;
+
             child.wait().map_err(Error::ContainerWaitCommand)?.code()
         };
 
         self.mounts.cleanup(self.rootfs.clone())?;
+        self.state.remove()?;
 
         if let Some(code) = code {
             if code != 0 {
@@ -131,7 +162,7 @@ mod tests {
         )?;
 
         let host_mounts_before_run_fail = MountList::new().unwrap();
-        let container = Container::new(test_folder_path).unwrap();
+        let mut container = Container::new(test_folder_path, "test_folder").unwrap();
         assert!(container.run().is_err());
 
         let host_mounts_after_run_fail = MountList::new().unwrap();
@@ -142,7 +173,7 @@ mod tests {
 
     #[test]
     fn test_create_container_with_invalid_oci_runtime_spec_file() -> Result<(), Error> {
-        assert!(Container::new("invalid_spec_file").is_err());
+        assert!(Container::new("invalid_spec_file", "invalid_spec").is_err());
         Ok(())
     }
 }

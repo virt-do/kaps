@@ -15,6 +15,9 @@ use container::Container;
 /// The `handler` method provided below will be executed.
 #[derive(Debug, Args)]
 pub struct RunCommand {
+    /// Name of the container instance that will be start. It must me unique on your host
+    name: String,
+
     /// The bundle used by the container.
     #[clap(short, long)]
     bundle: String,
@@ -23,8 +26,8 @@ pub struct RunCommand {
 #[async_trait]
 impl Handler for RunCommand {
     async fn handler(&self, _: &mut env_logger::Builder) -> Result<()> {
-        // Create a container by passing the bundle provided in arguments to it's constructor.
-        let container = Container::new(&self.bundle)?;
+        // Create a container by passing the bundle and the id provided in arguments to it's constructor.
+        let mut container = Container::new(&self.bundle, &self.name)?;
 
         // Run the container
         // At the moment, we don't have a detached mode for the container,

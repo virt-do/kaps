@@ -12,7 +12,7 @@ struct Mount {
 
 #[derive(Clone)]
 pub struct Mounts {
-    vec: Vec<Mount>,
+    mounts: Vec<Mount>,
 }
 
 impl Mounts {
@@ -20,7 +20,7 @@ impl Mounts {
     /// This method should be called before the container process execution in order to prepare
     /// & mount every mounts defined for it.
     pub fn apply(&self) -> Result<(), std::io::Error> {
-        for mount in &self.vec {
+        for mount in &self.mounts {
             if let Some(code) = Command::new("mount")
                 .args(["-t", &mount.typ, &mount.source, &mount.destination])
                 .status()?
@@ -37,7 +37,7 @@ impl Mounts {
     /// Cleanup the mounts of a rootfs.
     /// This method should be called when a container has ended, to clean up the FS.
     pub fn cleanup(&self, rootfs: PathBuf) -> Result<(), crate::Error> {
-        for mount in &self.vec {
+        for mount in &self.mounts {
             let mut path = rootfs.clone();
             path.push(&mount.source);
 
@@ -64,7 +64,7 @@ impl Default for Mounts {
     /// Based on the OCI Specification
     fn default() -> Self {
         Mounts {
-            vec: vec![
+            mounts: vec![
                 Mount {
                     typ: String::from("devtmpfs"),
                     source: String::from("dev"),

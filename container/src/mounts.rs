@@ -84,3 +84,53 @@ impl Default for Mounts {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::mounts::Mount;
+    use crate::Mounts;
+    use proc_mounts::MountList;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_mount_apply_and_cleanup() -> Result<(), std::io::Error> {
+        let test_folders = vec![
+            "/tmp/kaps-test_a",
+            "/tmp/kaps-test_b",
+            "/tmp/kaps-test_c",
+            "/tmp/kaps-test_d",
+        ];
+        for folder in &test_folders {
+            std::fs::create_dir_all(folder)?;
+        }
+
+        let host_mounts_before_apply = MountList::new().unwrap();
+        let mounts = Mounts {
+            mounts: vec![
+                Mount {
+                    typ: String::from("devtmpfs"),
+                    source: String::from("tmp/kaps-test_a"),
+                    destination: String::from("/tmp/kaps-test_b"),
+                },
+                Mount {
+                    typ: String::from("devtmpfs"),
+                    source: String::from("tmp/kaps-test_c"),
+                    destination: String::from("/tmp/kaps-test_d"),
+                },
+            ],
+        };
+        mounts.apply()?;
+
+        let host_mounts_after_apply = MountList::new().unwrap();
+        assert_ne!(host_mounts_before_apply, host_mounts_after_apply);
+
+        mounts.cleanup(PathBuf::from("")).unwrap();
+        let host_mounts_after_cleanup = MountList::new().unwrap();
+        assert_eq!(host_mounts_before_apply, host_mounts_after_cleanup);
+
+        for folder in &test_folders {
+            std::fs::remove_dir_all(folder)?;
+        }
+        Ok(())
+    }
+}

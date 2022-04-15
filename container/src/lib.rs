@@ -5,15 +5,21 @@ use std::path::PathBuf;
 use oci_spec::runtime::Spec;
 
 use command::Command;
+use cpu::Cpu;
 use environment::Environment;
+use memory::Memory;
 use mounts::Mounts;
 use namespaces::Namespaces;
+use oci_spec::runtime::LinuxResources;
 use state::{ContainerState, Status};
 
 mod command;
+mod cpu;
 mod environment;
+mod memory;
 mod mounts;
 mod namespaces;
+mod resources;
 pub mod spec;
 mod state;
 
@@ -67,6 +73,8 @@ pub struct Container {
     command: Command,
     /// The container state
     state: ContainerState,
+    /// The container resources,
+    resources: LinuxResources,
 }
 
 impl Container {
@@ -95,6 +103,19 @@ impl Container {
                 Namespaces::from(linux.namespaces())
             });
 
+        // Get the container resources if the linux block is defined into the specification.
+        let resources = spec
+            .linux()
+            .as_ref()
+            .map_or(LinuxResources::default(), |linux| {
+                linux
+                    .resources()
+                    .as_ref()
+                    .map_or(LinuxResources::default(), |resources| {
+                        LinuxResources::from(resources.clone())
+                    })
+            });
+
         // Set the state of the container
         let state = ContainerState::new(id, bundle_path)?;
 
@@ -104,6 +125,7 @@ impl Container {
             namespaces,
             rootfs,
             state,
+            resources,
             ..Default::default()
         })
     }
@@ -111,6 +133,17 @@ impl Container {
     /// Run the container.
     pub fn run(&mut self) -> Result<()> {
         let mounts = self.mounts.clone();
+        let mut cpu_cgroup = Cpu::new();
+        let mut memory_cgroup = Memory::new();
+
+        if let Some(resources_cpu) = &self.resources.cpu() {
+            cpu_cgroup.apply(&resources_cpu.clone()).unwrap();
+        }
+
+        if let Some(resources_memory) = &self.resources.memory() {
+            memory_cgroup.apply(&resources_memory.clone()).unwrap();
+        }
+
         let code = unsafe {
             let mut child = match unshare::Command::from(&self.command)
                 .chroot_dir(&self.rootfs)
@@ -126,10 +159,13 @@ impl Container {
             };
 
             self.state.pid = child.pid();
-            self.state.set_status(Status::Running)?;
+            self.state.set_status(Status::Running).unwrap();
 
             child.wait().map_err(Error::ContainerWaitCommand)?.code()
         };
+
+        cpu_cgroup.delete().unwrap();
+        memory_cgroup.delete().unwrap();
 
         self.mounts.cleanup(self.rootfs.clone())?;
         self.state.remove()?;

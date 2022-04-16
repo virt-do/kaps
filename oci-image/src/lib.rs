@@ -1,6 +1,5 @@
 use crate::pull::Puller;
-use crate::snapshots::overlay::OverlayFS;
-use crate::snapshots::{SnapshotType, Snapshotter};
+use crate::snapshots::Snapshotter;
 use crate::state::{ImageMetadata, MetadataManager, State};
 use crate::utils::to_uid;
 use oci_spec::image::ImageConfiguration;
@@ -87,7 +86,7 @@ pub struct ImageManager {
 }
 
 impl ImageManager {
-    pub fn new(data_dir: &Path, snapshot_type: SnapshotType) -> Result<Self> {
+    pub fn new(data_dir: &Path, snapshot: Box<dyn Snapshotter>) -> Result<Self> {
         // If data_dir not is not existing
         // we must create it
         if !data_dir.exists() {
@@ -95,21 +94,11 @@ impl ImageManager {
                 .map_err(|e| Error::ManagerDataDirectoryCreation(e.to_string()))?;
         }
 
-        let mut state = State::try_from(&data_dir.join(STATE_FILE))?;
-
-        let index = state.snapshot_index(&snapshot_type);
-        let snapshot: Box<dyn Snapshotter> = match snapshot_type {
-            SnapshotType::Overlay => Box::new(OverlayFS {
-                data_dir: data_dir.join("overlay"),
-                index,
-            }),
-        };
-
-        state.add_snapshot(&snapshot_type, index);
+        let state = State::try_from(&data_dir.join(STATE_FILE))?;
 
         Ok(Self {
             data_dir: data_dir.to_path_buf(),
-            state: Arc::new(Mutex::new(state.clone())),
+            state: Arc::new(Mutex::new(state)),
             snapshot,
         })
     }
@@ -127,6 +116,7 @@ impl ImageManager {
             .ok_or_else(|| Error::ImageNotFound(format!("No image found with id={}", image_id)))?
             .clone();
 
+        let snapshot_index = self.state.lock().await.snapshot_index();
         let mount_path = self.bundles_dir().join(&image.id);
 
         log::debug!("creating new OCI bundle into {}", mount_path.display());
@@ -138,6 +128,8 @@ impl ImageManager {
                 .map(|layer| layer.store_path)
                 .collect(),
             mount_path.join(OCI_ROOTFS).as_path(),
+            &snapshot_index,
+            false,
         )?;
 
         log::debug!("generating oci runtime configuration based on image");
@@ -236,14 +228,20 @@ impl ImageManager {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ImageManager, SnapshotType};
+    use crate::snapshots::overlay::OverlayFS;
+    use crate::ImageManager;
     use std::env::temp_dir;
     use std::fs::remove_dir_all;
 
     #[test]
     fn test_it_create_a_manager_instance() {
         let data_dir = temp_dir().join("kaps");
-        let im = ImageManager::new(&data_dir, SnapshotType::Overlay);
+        let im = ImageManager::new(
+            &data_dir,
+            Box::new(OverlayFS {
+                data_dir: data_dir.join("snapshots"),
+            }),
+        );
         assert!(im.is_ok())
     }
 
@@ -252,7 +250,13 @@ mod tests {
         let fixtures = vec!["docker.io/amd64/alpine", "mcr.microsoft.com/hello-world"];
 
         let data_dir = temp_dir().join("kaps_tests");
-        let mut im = ImageManager::new(&data_dir, SnapshotType::Overlay).unwrap();
+        let mut im = ImageManager::new(
+            &data_dir,
+            Box::new(OverlayFS {
+                data_dir: data_dir.join("snapshots"),
+            }),
+        )
+        .unwrap();
 
         for image in fixtures {
             assert!(im.pull(image, &true, &None).await.is_ok());

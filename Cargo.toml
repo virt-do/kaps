@@ -5,11 +5,13 @@ edition = "2021"
 authors = ["Polytech Montpellier - DevOps"]
 
 [dependencies]
+oci-image = { path = "oci-image" }
 clap = { version = "3.0.5", features = ["derive"] }
 container = { path = "container" }
 oci-spec = "0.5.3"
 
 [workspace]
 members = [
- "container"
+        "container",
+        "oci-image"
 ]

@@ -26,7 +26,10 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
           components: rustfmt, clippy
-
+      - name: Cargo setup
+        run: |
+          echo "[target.x86_64-unknown-linux-gnu]" >> ~/.cargo/config
+          echo "runner = 'sudo -E'" >> ~/.cargo/config
       - name: Build and install with default features
         run: cargo build
 

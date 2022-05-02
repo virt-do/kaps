@@ -10,6 +10,8 @@ oci-spec = "0.5.3"
 unshare = { git = "https://github.com/virt-do/unshare", branch = "main" }
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
+controlgroup = "0.3.0"
+anyhow = "1.0.57"
 
 [dev-dependencies]
 proc-mounts = "0.3.0"

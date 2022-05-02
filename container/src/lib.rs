@@ -19,7 +19,6 @@ mod environment;
 mod memory;
 mod mounts;
 mod namespaces;
-mod resources;
 pub mod spec;
 mod state;
 
@@ -159,7 +158,7 @@ impl Container {
             };
 
             self.state.pid = child.pid();
-            self.state.set_status(Status::Running).unwrap();
+            self.state.set_status(Status::Running)?;
 
             child.wait().map_err(Error::ContainerWaitCommand)?.code()
         };

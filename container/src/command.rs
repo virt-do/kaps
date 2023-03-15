@@ -42,3 +42,21 @@ impl From<&Option<Process>> for Command {
         command
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{Command, Error};
+    use oci_spec::runtime::Process;
+
+    #[test]
+    fn test_command_from_process() -> Result<(), Error> {
+        let mut test_process = Process::default();
+
+        test_process.set_args(Some(vec!["echo".to_string(), "hello world".to_string()]));
+        let test_command = Command::from(&Some(test_process));
+        assert_eq!(test_command.arg0, "echo");
+        assert_eq!(test_command.args[0], "hello world");
+
+        Ok(())
+    }
+}

@@ -1,0 +1,19 @@
+[package]
+name = "oci-image"
+version = "0.1.0"
+edition = "2021"
+authors = ["Thomas Gouveia <thomas.gouveia@etu.umontpellier.fr"]
+
+[dependencies]
+log = "0.4.14"
+oci-distribution = "0.8.1"
+oci-spec = "0.5.4"
+serde_json = "1.0"
+serde = "1.0.136"
+futures-util = "0.3.21"
+tokio = { version = "1.0", features = ["macros", "fs"] }
+tar = "0.4.38"
+sha2 = "0.10.2"
+flate2 = "1.0.22"
+nix = "0.23.1"
+container = { path = "../container" }
